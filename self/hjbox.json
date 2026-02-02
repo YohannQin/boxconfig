@@ -1,0 +1,73 @@
+{
+  "sites": [
+    {
+      "key": "vod_m3u8_collection",
+      "name": "我的视频库",
+      "type": 1,
+      "api": "file:///storage/emulated/0/111/haijiao/conf/hjbox_media.json",
+      "searchable": 1,
+      "quickSearch": 0,
+      "filterable": 1
+      },
+    {
+      "key": "色播聚合1",
+      "name": "🔞色播聚合",
+      "type": 3,
+      "api": "file:///storage/emulated/0/111/haijiao/conf/色播聚合.py",
+      "searchable": 1,
+      "quickSearch": 0,
+      "filterable": 0,
+      "changeable": 0
+    },
+    {
+      "key": "海角",
+      "name": "🔞海角py",
+      "type": 3,
+      "api": "file:///storage/emulated/0/111/haijiao/conf/haijiao.py",
+      "searchable": 1,
+      "quickSearch": 0,
+      "filterable": 0,
+      "changeable": 0,
+      "ext": {
+        "base": "https://ghfast.top/https://raw.githubusercontent.com/YohannQin/database/refs/heads/main/hj/user/",
+        "filters": {
+        "author": [
+            {
+                "key": "sort",
+                "name": "排序",
+                "value": [
+                    {"n": "排序", "v": "排序"},
+                    {"n": "最新", "v": "最新"},
+                    {"n": "最热", "v": "最热"}
+                ]
+            },
+            {
+                "key": "class",
+                "name": "类型",
+                "value": [
+                    {"n": "类型", "v": "类型"},
+                    {"n": "姐姐", "v": "姐姐"},
+                    {"n": "妹妹", "v": "妹妹"},
+                    {"n": "嫂子", "v": "嫂子"},
+                    {"n": "妈妈", "v": "妈妈"},
+                    {"n": "女儿", "v": "女儿"},
+                ]
+            },
+            {
+                "key": "year",
+                "name": "年份",
+                "value": [
+                    {"n": "年份", "v": "年份"},
+                    {"n": "2026", "v": "2026"},
+                    {"n": "2025", "v": "2025"},
+                    {"n": "2024", "v": "2024"},
+                    {"n": "2023", "v": "2023"},
+                    {"n": "2022", "v": "2022"},
+                ]
+            }
+        ]
+        }
+      }
+    }
+  ]
+}
