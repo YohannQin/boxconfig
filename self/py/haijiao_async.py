@@ -114,18 +114,6 @@ class Spider(Spider):
 
 	def getName(self):
 		return '海角'
-		
-	async def _media_task(self):
-		self.log("开始")
-		await asyncio.sleep(5)
-		self.log("结束")
-		return True
-	
-	async def _task_main(self):
-		self.log("开始执行")
-		task1 = asyncio.create_task(self._media_task())
-		await asyncio.gather(task1)
-		self.log("结束执行")
 
 	def homeVideoContent(self):
 		pass
@@ -281,5 +269,3 @@ class Spider(Spider):
 			tasks.append(url)
 			
 		self.run_concurrent_requests(tasks)
-   
-
