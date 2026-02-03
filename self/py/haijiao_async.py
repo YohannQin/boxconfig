@@ -33,8 +33,6 @@ class Spider(Spider):
 	def categoryContent(self,tid,pg,filter,extend):
 		self.log(tid)
 		self.log(extend)
-		self.raw_json = self.base_url + "hjbox_media.json"
-		#self.async_get_category_media_data(tid)
 		
 		if self.media_json_data is None:
 			self._category_request_main(tid)
@@ -66,17 +64,7 @@ class Spider(Spider):
 			"list": videos
 		}
 		return result
-	"""
-	def _get_media_data(self,url):
-		self.log(url)
-		data = self.fetch(url)
-		self.log(data)
-		data = data.text
-		data = base64.b64decode(data)
-		data = data.decode('utf-8')
-		data = json.loads(data)
-		return data
-	"""
+
 	def detailContent(self,array):
 		id = array[0]
 		media_vod = self.id_map.get(id)
@@ -125,7 +113,7 @@ class Spider(Spider):
 		return result
 
 	def getName(self):
-		return '色播聚合'
+		return '海角'
 		
 	async def _media_task(self):
 		self.log("开始")
@@ -187,30 +175,6 @@ class Spider(Spider):
 		data = json.loads(data)
 		return data
 
-	def _category_media_request(self, category):
-		url = self.base_url + 'hjbox_media.json'
-		data = self._get_media_data(url)
-		if data is None:
-			return False
-		videos = data['list']
-		self.id_map = {item["vod_id"]: item for item in videos}
-		self.media_json_data = data
-		return True
-
-	def _file_class_media_request(self, file_class):
-		url = self.base_url + file_class + '.json'
-		data = self._get_media_data(url)
-		if data is None:
-			return False
-		data = data.get('list')
-		id_map = {item["vod_id"]: item for item in data}
-		cur_class_media = {
-			"media_data": data,
-			"id_map": id_map
-		}
-		self.media_dict[file_class] = cur_class_media
-		return True
-
 	def _category_media_parse(self, category, data):
 		self.log("\n首页处理\n")
 		if data is None:
@@ -262,32 +226,6 @@ class Spider(Spider):
 			else:
 				quarter -= 1
 		return recent_quarters
-
-	async def _media_category_request_task(self, category):
-		self.log("分类请求开始")
-		self._category_media_request(category)
-		self.log("分类请求结束")
-		return True
-
-	async def _media_request_task(self, file_class):
-		self.log("媒体请求开始")
-		self._file_class_media_request(file_class)
-		self.log("媒体请求开始")
-		return True
-
-	async def _category_request_task_main(self, category):
-		self.log("开始执行")
-		tasks = []
-		task = asyncio.create_task(self._media_category_request_task(category))
-		tasks.append(task)
-
-		class_list = self._generate_latest_file_class_list()
-		for file_class in class_list:
-			task = asyncio.create_task(self._media_request_task(file_class))
-			tasks.append(task)
-
-		await asyncio.gather(*tasks)
-		self.log("结束执行")
 	
 	def send_request_with_callback(self, url, callback, class_str):
 		"""发送请求并使用指定的回调函数处理响应"""
