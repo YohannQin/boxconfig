@@ -4,6 +4,7 @@ import re
 from urllib.parse import urljoin
 sys.path.append('..')
 from base.spider import Spider
+from pyquery import PyQuery as pq
 
 class Spider(Spider):
     def init(self, extend=""):
@@ -85,9 +86,28 @@ class Spider(Spider):
             {'type_name': 'SA国际传媒', 'type_id': '/videos/series-633ef3ef07d33.html'},
             {'type_name': '其他中文AV', 'type_id': '/videos/series-63986aec205d8.html'}
         ]
+        url = urljoin(self.host, 'categories.html')
+        doc = pq(self.fetch(url))
+        video_cate = []
+        for a in doc('a').items():
+        # 提取href中的ID
+        href = a.attr('href')
+        if href and 'videos/series-' in href:
+            print(href)
+            series_id = href.split('series-')[1].split('.html')[0]
 
-        classes.extend(video_classes)
-        result['class'] = classes
+            # 提取class="title"的文本内容
+            title = a.find('.title').text()
+            if not title:
+                continue
+
+            video_cate.append({
+                'type_name': title,
+                'type_id': href,
+            })
+
+        #classes.extend(video_classes)
+        result['class'] = video_cate
         result['filters'] = {}
         return result
 
