@@ -6,6 +6,7 @@ sys.path.append('..')
 from base.spider import Spider
 from pyquery import PyQuery as pq
 
+
 class Spider(Spider):
     def init(self, extend=""):
         self.host = 'https://xchina001.site'
@@ -32,6 +33,8 @@ class Spider(Spider):
         video_items = re.findall(r'<div[^>]*class="item video[^>]*>(.*?)</div>', html_content, re.S)
         for item in video_items:
             link_match = re.search(r'<a[^>]*href="(.*?)"[^>]*title="(.*?)"[^>]*>', item)
+            self.log("aa\n")
+            self.log(item)
             if link_match:
                 href = link_match.group(1)
                 title = link_match.group(2)
@@ -61,6 +64,61 @@ class Spider(Spider):
                 })
         
         return vods
+        
+    def parseVideoItems(self, doc):
+        # 查找所有视频项
+        video_items = doc('.item.video')
+        videos_data = []
+
+        for item in video_items.items():
+            # 1. 提取 href
+            # 从第一个a标签获取href
+            href = item.find('a').eq(0).attr('href')
+            self.log(href)
+    
+            # 2. 提取 title
+            # 从第一个a标签的title属性获取
+            title = item.find('a').eq(0).attr('title')
+            # 或者从.title类元素获取
+            title_text = item.find('.title a').text()
+            self.log(title_text)
+    
+            # 3. 提取 model-item (模特名称)
+            model_item = item.find('.model-item').text()
+            self.log(model_item)
+    
+            # 4. 提取 tags
+            # 获取所有tag div，排除空的和包含图标的
+            tags_elements = item.find('.tags > div')
+            items = list(tags_elements.items())
+            self.log(len(items))
+            #self.log(items)
+            vendor = items[0].text().strip()
+            comment =items[1].text().strip()
+            seria_num = items[2].text().strip()
+            times = items[3].text().strip()
+            #magnet = items[4].text().strip()
+            
+            # 提取封面图片URL
+            # 从style属性中提取背景图片URL
+            style_attr = item.find('.img').attr('style')
+            cover_url = None
+            if style_attr and 'background-image:url' in style_attr:
+                import re
+                match = re.search(r"url\('([^']+)'\)", style_attr)
+                if match:
+                    cover_url = match.group(1)
+            
+            name = title.strip()
+            if seria_num:
+                name = seria_num + ' ' + name
+            videos_data.append({
+                    'vod_id': href,
+                    'vod_name': name,
+                    'vod_pic': cover_url,
+                    'vod_remarks': model_item
+                })
+        return videos_data
 
     def homeContent(self, filter):
         result = {}
@@ -86,25 +144,30 @@ class Spider(Spider):
             {'type_name': 'SA国际传媒', 'type_id': '/videos/series-633ef3ef07d33.html'},
             {'type_name': '其他中文AV', 'type_id': '/videos/series-63986aec205d8.html'}
         ]
+         
         url = urljoin(self.host, 'categories.html')
-        doc = pq(self.fetch(url))
+        response = requests.get(url, headers=self.header)
+        #self.log(response.content)
+        response.encoding = 'utf-8'
+        doc = pq(response.content)
         video_cate = []
+        self.log("11111\n")
         for a in doc('a').items():
-        # 提取href中的ID
-        href = a.attr('href')
-        if href and 'videos/series-' in href:
-            print(href)
-            series_id = href.split('series-')[1].split('.html')[0]
+            # 提取href中的ID
+            href = a.attr('href')
+            if href and 'videos/series-' in href:
+                self.log(href)
+                series_id = href.split('series-')[1].split('.html')[0]
 
-            # 提取class="title"的文本内容
-            title = a.find('.title').text()
-            if not title:
-                continue
+                # 提取class="title"的文本内容
+                title = a.find('.title').text()
+                if not title:
+                    continue
 
-            video_cate.append({
-                'type_name': title,
-                'type_id': href,
-            })
+                video_cate.append({
+                    'type_name': title,
+                    'type_id': href,
+                })
 
         #classes.extend(video_classes)
         result['class'] = video_cate
@@ -129,8 +192,8 @@ class Spider(Spider):
             res.encoding = 'utf-8'
             html_content = res.text
             # 使用辅助方法提取视频项
-            vods = self._extractVideoItems(html_content)
-
+            #vods = self._extractVideoItems(html_content)
+            vods = self.parseVideoItems(pq(res.content))
             result['list'] = vods
             current_page_items = len(vods)
             has_next_page = '下一页' in html_content or 'next' in html_content.lower() or f'page={pg+1}' in html_content
