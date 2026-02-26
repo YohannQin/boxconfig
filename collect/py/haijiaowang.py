@@ -85,6 +85,45 @@ class Spider(Spider):
                 })
         return videos_data
 
+    def parseAuthorItems(self, html):
+        soup = BeautifulSoup(html, 'html.parser')
+        # 查找所有作者
+        author_items = soup('.content[v-drag-scroll]')
+        videos_data = []
+
+        for item in author_items:
+            # 1. 提取 href
+            # 从第一个a标签获取href
+            href = item.find('a').get('href')
+            # self.log(href)
+
+            # 2. 提取 作者名
+            # 从第一个h2标签获取text
+            title = item.find('h2').get_text()
+
+            # 3. 提取 tags
+            # 获取所有tag div，排除空的和包含图标的
+            tags_elements = item.find_all('.item')
+            fans = tags_elements[0].get_text().strip()
+            likes = tags_elements[1].get_text().strip()
+
+            # 4 提取最近帖子time
+            times_elements = item.find_all('.time')
+            if not times_elements:
+                continue
+            recent_time = times_elements[0].get_text().strip()
+
+            remarks = recent_time + '  ' + fans
+
+            videos_data.append({
+                'vod_id': href,
+                'vod_name': title,
+                'vod_pic': "",
+                'vod_remarks': remarks,
+                'vod_tag': 'folder'
+            })
+        return videos_data
+    
     def homeContent(self, filter):
         result = {}
         classes = [
@@ -100,6 +139,12 @@ class Spider(Spider):
             {'type_name': '海角探花', 'type_id': '/category/hjth/'},
             {'type_name': '海角动漫', 'type_id': '/category/hjdm/'},
             {'type_name': '海角搬运', 'type_id': '/category/hjby/'},
+            {'type_name': '海角博主', 'type_id': '/authors_blogger/creater/'},
+            #{'type_name': 'UP主', 'type_id': '/authors_blogger/creater/'},
+            #{'type_name': '原创主', 'type_id': '/authors_blogger/original/'},
+            #{'type_name': '入驻', 'type_id': '/authors_blogger/enter/'},
+            {'type_name': 'UP主热榜', 'type_id': '/authors_up/post-all'},
+
         ]
         
         result['class'] = classes
@@ -121,7 +166,10 @@ class Spider(Spider):
             self.log(res.apparent_encoding)
             res.encoding = 'utf-8'
             html_content = res.text
-            vods = self.parseVideoItems(pq(res.text))
+            if "authors" in tid:
+                vods = self.parseAuthorItems(html_content)
+            else:
+                vods = self.parseVideoItems(pq(res.text))
             result['list'] = vods
             current_page_items = len(vods)
             has_next_page = '下一页' in html_content or 'next' in html_content.lower() or f'page={pg+1}' in html_content
