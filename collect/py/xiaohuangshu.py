@@ -120,29 +120,57 @@ class Spider(Spider):
                 })
         return videos_data
 
+    def parseModelItems(self, html):
+        soup = BeautifulSoup(html, 'html.parser')
+        # 查找所有作者
+        model_items = soup('.item.model')
+        videos_data = []
+
+        for item in model_items:
+            # 1. 提取 href
+            href = item.find('a').get('href')
+            # self.log(href)
+
+            # 2. 提取 作者名
+            title = item.find('a').get('title')
+            # self.log(title)
+
+            # 3. 提取 tags， 获取所有tags的所有直接子div
+            tags_elements = item.select(".tags > div")
+            image_count = tags_elements[0].get_text().strip()
+            video_count = tags_elements[1].get_text().strip()
+
+            # 4 获取简介
+            brief_div = item.find('.brief')
+            if brief_div:
+                brief_text = brief_div.get_text().strip()
+
+            # 5 获取图片
+            style_attr = item.find('.img').get('style')
+            cover_url = None
+            if style_attr and 'background-image:url' in style_attr:
+                match = re.search(r"url\('([^']+)'\)", style_attr)
+                if match:
+                    cover_url = match.group(1)
+
+            remarks = '视频:' + video_count
+            videos_data.append({
+                'vod_id': href,
+                'vod_name': title,
+                'vod_pic': cover_url,
+                'vod_remarks': remarks,
+                'vod_tag': 'folder'
+            })
+        return videos_data
+
     def homeContent(self, filter):
         result = {}
         classes = []
-        video_classes = [
-            {'type_name': '麻豆传媒', 'type_id': '/videos/series-5f904550b8fcc.html'},
-            {'type_name': '独立创作者', 'type_id': '/videos/series-61bf6e439fed6.html'},
-            {'type_name': '糖心Vlog', 'type_id': '/videos/series-61014080dbfde.html'},
-            {'type_name': '蜜桃传媒', 'type_id': '/videos/series-5fe8403919165.html'},
-            {'type_name': '星空传媒', 'type_id': '/videos/series-6054e93356ded.html'},
-            {'type_name': '天美传媒', 'type_id': '/videos/series-60153c49058ce.html'},
-            {'type_name': '果冻传媒', 'type_id': '/videos/series-5fe840718d665.html'},
-            {'type_name': '香蕉视频', 'type_id': '/videos/series-65e5f74e4605c.html'},
-            {'type_name': '精东影业', 'type_id': '/videos/series-60126bcfb97fa.html'},
-            {'type_name': '爱豆传媒', 'type_id': '/videos/series-63d134c7a0a15.html'},
-            {'type_name': '杏吧原版', 'type_id': '/videos/series-6072997559b46.html'},
-            {'type_name': 'IBiZa Media', 'type_id': '/videos/series-64e9cce89da21.html'},
-            {'type_name': '性视界', 'type_id': '/videos/series-63490362dac45.html'},
-            {'type_name': 'ED Mosaic', 'type_id': '/videos/series-63732f5c3d36b.html'},
-            {'type_name': '大象传媒', 'type_id': '/videos/series-65bcaa9688514.html'},
-            {'type_name': '扣扣传媒', 'type_id': '/videos/series-6230974ada989.html'},
-            {'type_name': '萝莉社', 'type_id': '/videos/series-6360ca9706ecb.html'},
-            {'type_name': 'SA国际传媒', 'type_id': '/videos/series-633ef3ef07d33.html'},
-            {'type_name': '其他中文AV', 'type_id': '/videos/series-63986aec205d8.html'}
+        video_cate = [
+            {'type_name': '华人演员', 'type_id': '/models/type-7.html'},
+            {'type_name': '日本演员', 'type_id': '/models/type-10.html'},
+            #{'type_name': '麻豆传媒', 'type_id': '/videos/series-5f904550b8fcc.html'},
+            #{'type_name': '独立创作者', 'type_id': '/videos/series-61bf6e439fed6.html'},
         ]
          
         url = urljoin(self.host, 'categories.html')
@@ -150,7 +178,7 @@ class Spider(Spider):
         #self.log(response.content)
         response.encoding = 'utf-8'
         doc = pq(response.content)
-        video_cate = []
+        #video_cate = []
         self.log("11111\n")
         for a in doc('a').items():
             # 提取href中的ID
@@ -193,7 +221,10 @@ class Spider(Spider):
             html_content = res.text
             # 使用辅助方法提取视频项
             #vods = self._extractVideoItems(html_content)
-            vods = self.parseVideoItems(pq(res.content))
+            if "models" in tid:
+                vods = self.parseModelItems(html_content)
+            else:
+                vods = self.parseVideoItems(pq(res.content))
             result['list'] = vods
             current_page_items = len(vods)
             has_next_page = '下一页' in html_content or 'next' in html_content.lower() or f'page={pg+1}' in html_content
@@ -268,8 +299,15 @@ class Spider(Spider):
                     except:
                         pass
 
+            # 解析视频连接
+            video_url = None
+            videoplayer_pattern = re.compile(r'const player = new VideoPlayer\(.*?src:\s*["\']([^"\']+?)["\']', re.S)
+            videoplayer_match = videoplayer_pattern.search(html_content)
+            if videoplayer_match:
+                video_url = videoplayer_match.group(1)
+                
             vod['vod_play_from'] = '瑟佬在线'
-            vod['vod_play_url'] = f'开撸${url}'
+            vod['vod_play_url'] = video_url
         except Exception as e:
             print(f"detailContent error: {e}")
         return {'list': [vod]}
